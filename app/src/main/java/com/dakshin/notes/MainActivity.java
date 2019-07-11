@@ -1,15 +1,12 @@
 package com.dakshin.notes;
 
 import android.content.ActivityNotFoundException;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.provider.OpenableColumns;
-import android.support.annotation.NonNull;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -17,61 +14,26 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.webkit.MimeTypeMap;
-import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
-import com.google.android.gms.auth.api.Auth;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.auth.api.signin.GoogleSignInResult;
-import com.google.android.gms.drive.Drive;
-import com.google.android.gms.drive.DriveClient;
-import com.google.android.gms.drive.DriveContents;
-import com.google.android.gms.drive.DriveFile;
-import com.google.android.gms.drive.DriveFolder;
-import com.google.android.gms.drive.DriveId;
-import com.google.android.gms.drive.DriveResourceClient;
-import com.google.android.gms.drive.Metadata;
-import com.google.android.gms.drive.MetadataBuffer;
-import com.google.android.gms.drive.MetadataChangeSet;
-import com.google.android.gms.drive.query.Filters;
-import com.google.android.gms.drive.query.Query;
-import com.google.android.gms.drive.query.SearchableField;
-import com.google.android.gms.tasks.Continuation;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.Writer;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Stack;
 
@@ -90,19 +52,12 @@ public class MainActivity extends AppCompatActivity {
     String currentPath="files.json";
     String tag="tag"; //for logcat
     Stack<String> fileHistory;
-    GoogleSignInClient GoogleSignInClient;
-    DriveResourceClient driveResourceClient;
-    DriveFolder rootFolder;
     private static final int REQUEST_CODE_SIGN_IN = 0;
-    Queue<DriveJobQueue> pendingDriveJobs=new LinkedList<>();
-    MetadataBuffer driveFolderContents;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        GoogleSignInClient = buildGoogleSignInClient();
-        startActivityForResult(GoogleSignInClient.getSignInIntent(), REQUEST_CODE_SIGN_IN);
 
         setContentView(R.layout.activity_main);
         listView = findViewById(R.id.listview);
@@ -301,9 +256,6 @@ public class MainActivity extends AppCompatActivity {
                 writer.println(message);
                 writer.close();
 
-                // was created bcoz it doesn't exist in drive- upload!
-                DriveJobQueue item=new DriveJobQueue("application/json",file);
-                pendingDriveJobs.add(item);
 
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -430,52 +382,7 @@ public class MainActivity extends AppCompatActivity {
 
             } else Log.d(tag, "Pick file request failed");
         }
-        else if (requestCode==REQUEST_CODE_SIGN_IN) {
-            // Called after user is signed in.
-            Task<GoogleSignInAccount> signintask =
-                    GoogleSignIn.getSignedInAccountFromIntent(data);
-            signintask.addOnFailureListener(e ->  Log.d(tag,"Failed with exception "+e));
-            if (signintask.isSuccessful()) {
-                // Sign in succeeded, proceed with account
-                GoogleSignInAccount acct = signintask.getResult();
-                Log.d(tag,"Sign in success");
-                driveResourceClient=Drive.getDriveResourceClient(this,acct);
-                
-                //on first run - check for existence of files
 
-                Query query = new Query.Builder()
-                        .addFilter(Filters.eq(SearchableField.TITLE, "files.json"))
-                        .build();
-                driveResourceClient.getAppFolder()
-                .addOnSuccessListener(new OnSuccessListener<DriveFolder>() {
-                    @Override
-                    public void onSuccess(DriveFolder driveFolder) {
-                        Log.d(tag,"RootFolder found");
-                        rootFolder=driveFolder;
-                        Task<MetadataBuffer>queryTask=driveResourceClient.queryChildren(rootFolder,query);
-                        queryTask
-                                .addOnSuccessListener(MainActivity.this,
-                                        metadataBuffer -> {
-                                    Log.d(tag,"Query result found "+metadataBuffer.getCount()+" items");
-                                    driveFolderContents=metadataBuffer;
-                                    verifyAllFilesAvailable();
-                                        })
-                                .addOnFailureListener(MainActivity.this, e -> {
-                                    Log.e(tag, "Error retrieving files", e);
-                                    finish();
-                                });
-                        executePendingDriveJobs();
-                    }
-
-                });
-                Log.d(tag,"Starting Query");
-            } else {
-                // Sign in failed
-                Log.d(tag,"Sign in failed");
-                Toast.makeText(this, "Sign in failed", Toast.LENGTH_SHORT).show();
-            }
-
-        }
     }
 
 
@@ -527,134 +434,5 @@ public class MainActivity extends AppCompatActivity {
         fam.close(true);
     }
 
-    private GoogleSignInClient buildGoogleSignInClient() {
-        GoogleSignInOptions signInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                        .requestScopes(Drive.SCOPE_FILE,Drive.SCOPE_APPFOLDER)
-                        .requestEmail()
-                        .build();
-        return GoogleSignIn.getClient(this, signInOptions);
-    }
 
-    private void uploadToDrive(String mimetype,File file) {
-        if (driveResourceClient==null)
-        {
-            Log.d(tag,"Not signed into Drive");
-            return;
-        } else if (rootFolder==null)
-        {
-            Log.d(tag,"root drive folder is not ready yet!");
-            return;
-        } else if(fileExistsOnDrive(file.getName())!=null){
-            Log.d(tag,file.getName()+" already exists on Drive");
-            return;
-        }
-        final Task<DriveContents> createContentsTask = driveResourceClient.createContents();
-        Tasks.whenAll(createContentsTask)
-                .continueWithTask(task -> {
-                    DriveContents contents = createContentsTask.getResult();
-                    OutputStream outputStream = contents.getOutputStream();
-                    InputStream inputStream = new FileInputStream(file);
-                    byte bytes[]=new byte[inputStream.available()];
-                    int bytesRead;
-                    while ((bytesRead = inputStream.read(bytes)) != -1) {
-                        outputStream.write(bytes, 0, bytesRead);
-                    }
-
-                    MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
-                            .setTitle(file.getName())
-                            .setMimeType(mimetype)
-                            .build();
-
-                    return driveResourceClient.createFile(rootFolder, changeSet, contents);
-                })
-                .addOnSuccessListener(this,
-                        driveFile -> {
-                            Log.d(tag,file.getName()+" written to Drive");
-                        })
-                .addOnFailureListener(this, e -> {
-                    Log.e(tag, "Unable to create in drive "+e);
-                });
-    }
-
-
-    private void downloadFromDrive(String name,DriveFile driveFile) {
-        //todo
-        //first check if this file already exists
-        File file=new File(getExternalFilesDir(null),name);
-        if(file.exists())
-        {
-            Log.d(tag,name+" already exists on disk. Skipping.");
-            //todo: decide whether or not to replace this file with the one on drive
-            return;
-        }
-        Task<DriveContents> openFileTask =
-                driveResourceClient.openFile(driveFile, DriveFile.MODE_READ_ONLY);
-        openFileTask
-                .continueWithTask(task -> {
-                    DriveContents contents = task.getResult();
-                    InputStream inputStream=contents.getInputStream();
-                    FileOutputStream outputStream=new FileOutputStream(file);
-                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                    int nRead;
-                    byte[] data = new byte[1024];
-                    while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
-                        buffer.write(data, 0, nRead);
-                    }
-
-                    buffer.flush();
-                    byte[] byteArray = buffer.toByteArray();
-                    outputStream.write(byteArray);
-                    outputStream.close();
-                    return driveResourceClient.discardContents(contents);
-                })
-                .addOnFailureListener(e -> {
-                   Log.e(tag,"Download from Drive failed, file name: "+name);
-                });
-    }
-    void executePendingDriveJobs()
-    {
-        while(pendingDriveJobs.size()!=0)
-        {
-            DriveJobQueue item=pendingDriveJobs.remove();
-            switch (item.getJobType())
-            {
-                case DriveJobQueue.JOB_TYPE_DOWNLOAD:
-                    downloadFromDrive(item.getName(),item.getDriveFile());
-                    break;
-                case DriveJobQueue.JOB_TYPE_UPLOAD:
-                    uploadToDrive(item.getMimeType(),item.getFile());
-                    break;
-            }
-        }
-    }
-
-    private void verifyAllFilesAvailable() {
-        if(driveFolderContents.getCount()!=0) {
-            // if its = 0,
-            //means this is the first installation. No need to download anything
-
-            for (Metadata mdata : driveFolderContents) {
-                String name=mdata.getOriginalFilename();
-                Log.d(tag, "Found file " + name);
-
-                //download this file and put it in the local folder
-                downloadFromDrive(name,mdata.getDriveId().asDriveFile());
-
-            }
-        }
-    }
-    private Date fileExistsOnDrive(String name) {
-        for(Metadata data:driveFolderContents){
-            if(data.getOriginalFilename().equals(name))
-                return data.getModifiedDate();
-        }
-        return null;
-    }
-    @Override
-    protected void onPause()
-    {
-        if(driveFolderContents!=null)
-        driveFolderContents.release();
-        super.onPause();
-    }
 }
