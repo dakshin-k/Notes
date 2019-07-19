@@ -20,6 +20,14 @@ import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.drive.DriveScopes;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -34,13 +42,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 import java.util.Stack;
 
 
+
+
 public class MainActivity extends AppCompatActivity {
-    //migrate all drive jobs to use the queue, and setup an alarm to execute pending jobs regularly
+
     private static final int PICKFILE_REQUEST_CODE = 1;
+    private static final int RC_SIGN_IN=2;
     ArrayList<MenuItem> arrayList;
     ListView listView;
     private CustomAdapter adapter;
@@ -52,8 +64,7 @@ public class MainActivity extends AppCompatActivity {
     String currentPath="files.json";
     String tag="tag"; //for logcat
     Stack<String> fileHistory;
-    private static final int REQUEST_CODE_SIGN_IN = 0;
-
+    DriveServiceHelper driveServiceHelper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -150,7 +161,35 @@ public class MainActivity extends AppCompatActivity {
             intent.setType("*/*");
             startActivityForResult(intent, PICKFILE_REQUEST_CODE);
         });
+
+        //gdrive
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(MainActivity.this);
+
+        GoogleAccountCredential credential =
+                GoogleAccountCredential.usingOAuth2(
+                        getApplicationContext(), Collections.singleton(DriveScopes.DRIVE_FILE));
+        if (account != null) {
+            credential.setSelectedAccount(account.getAccount());
+        } else {
+            startSignInIntent();
+            return;
+        };
+        com.google.api.services.drive.Drive googleDriveService =
+                new com.google.api.services.drive.Drive.Builder(
+                        AndroidHttp.newCompatibleTransport(),
+                        new GsonFactory(),
+                        credential)
+                        .setApplicationName("Notes")
+                        .build();
+        driveServiceHelper = new DriveServiceHelper(googleDriveService);
     }
+    private void startSignInIntent() {
+        GoogleSignInClient signInClient = GoogleSignIn.getClient(this,
+                GoogleSignInOptions.DEFAULT_SIGN_IN);
+        Intent intent = signInClient.getSignInIntent();
+        startActivityForResult(intent, RC_SIGN_IN);
+    }
+
 
     String seed="QWERTYUIOPASDFGHJKLZXCVBNM1234567890qwertyuiopasdfghjklzxcvbnm";
 
@@ -382,7 +421,23 @@ public class MainActivity extends AppCompatActivity {
 
             } else Log.d(tag, "Pick file request failed");
         }
+        else if(requestCode==RC_SIGN_IN){
+            GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(MainActivity.this);
 
+            GoogleAccountCredential credential =
+                    GoogleAccountCredential.usingOAuth2(
+                            getApplicationContext(), Collections.singleton(DriveScopes.DRIVE_FILE));
+            assert account != null;
+            credential.setSelectedAccount(account.getAccount());
+            com.google.api.services.drive.Drive googleDriveService =
+                    new com.google.api.services.drive.Drive.Builder(
+                            AndroidHttp.newCompatibleTransport(),
+                            new GsonFactory(),
+                            credential)
+                            .setApplicationName("Notes")
+                            .build();
+            driveServiceHelper = new DriveServiceHelper(googleDriveService);
+        }
     }
 
 
