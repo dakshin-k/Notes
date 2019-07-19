@@ -9,11 +9,11 @@ Compared to other note-taking apps which only allow text notes and pictures, thi
 * Importing and viewing any other files (.jpg, .png, .doc, .docx, .ppt, .pptx, .txt)
 
 # TO-DO
+* *Sync notes with Google Drive* 
 * Update ListView to RecyclerView
 * Icons are shown only for PDFs and folder, add icons for other file types as well
 * Take pictures from camera and add to list
 * Support manual reordering of list items
-* *Sync notes with Google Drive* (_will be ready with the next commit_)
 * Support for deleting notes
 * Dark theme :3
 * Sharing notes/ entire folders with other Notes users
