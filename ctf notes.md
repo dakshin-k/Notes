@@ -35,3 +35,16 @@ To get shell: (do `nc -lvp 443` on your machine first)
 
 ## Wordpress
       wpscan --api-token 2XiA11eRs5ryfHlZ2sX4wQuNWsdME48fpvxt9nlsnfs --url <url>
+
+
+# Windows
+
+1. Active Directory
+
+## Active Directory
+
+1. Username enumeration : enum4linux or  `nullinux -a`
+2. GetNPUsers.py can retrieve password hashes if usernames are known and “UF_DONT_REQUIRE_PREAUTH” is set
+3. With creds, can use evil-winrm if Windows Remote Management is enabled (usually port 5985)
+
+###### TODO : What's Bloodhound (for privesc, apparently) and how do you use it?
