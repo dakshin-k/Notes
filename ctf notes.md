@@ -7,6 +7,8 @@
 2. netcat reverse shell _(see below)_
 3. Bash reverse shell
 4. Bash shellshock, in cgi and sometimes [ssh](https://resources.infosecinstitute.com/bash-bug-cve-2014-6271-critical-vulnerability-scaring-internet/)
+5. Write into files using SQL
+      `SELECT '<?php phpinfo(); ?>' INTO OUTFILE '/var/www/html/phpinfo.php'`
 
 * list binaries with SUID bit set:
 
